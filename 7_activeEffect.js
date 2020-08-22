@@ -1,5 +1,5 @@
-console.log('---- Version 1.5 ----')
-console.log('Merging new functionallity')
+console.log('---- Version 1.6 ----')
+console.log('Active Effect')
 
 /**
  *  LIBRARY REACTIVE
@@ -7,23 +7,27 @@ console.log('Merging new functionallity')
 
 // For storing the dependencies for each reactive object
 const targetMap = new WeakMap()
+// The active effect running
+let activeEffect = null
 
 function track(target, key) {
-  // Get the current depsMap for this target (reactive object)
-  let depsMap = targetMap.get(target)
+  if (activeEffect) {
+    // Get the current depsMap for this target (reactive object)
+    let depsMap = targetMap.get(target)
 
-  if (!depsMap) {
-    // if it doesn't exist, create it
-    targetMap.set(target, (depsMap = new Map()))
+    if (!depsMap) {
+      // if it doesn't exist, create it
+      targetMap.set(target, (depsMap = new Map()))
+    }
+    // Get the depndency object for this property
+    let dep = depsMap.get(key)
+    // If it doesn't exist, create it
+    if (!dep) {
+      depsMap.set(key, (dep = new Set()))
+    }
+    // Add the effect to the dependency
+    dep.add(activeEffect)
   }
-  // Get the depndency object for this property
-  let dep = depsMap.get(key)
-  // If it doesn't exist, create it
-  if (!dep) {
-    depsMap.set(key, (dep = new Set()))
-  }
-  // Add the effect to the dependency
-  dep.add(effect)
 }
 
 function trigger(target, key) {
@@ -65,24 +69,33 @@ function reactive(target) {
   }
   return new Proxy(target, handler)
 }
+
+function effect(eff) {
+  activeEffect = eff
+  activeEffect()
+  activeEffect = null
+}
 /**
  * CODE TO EXECUTE
  */
 
 let product = reactive({ price: 5, quantity: 2 })
+let salePrice = 0
 let total = 0
-let effect = () => {
-  // product.price call path
-  // reactive() => get() => track() => WeakMap of product => depsMap with price and value => dep get
-
-  // product.quantity call path
-  // reactive() => get() => track() => WeakMap of product => depsMap with quantity and value => dep get
+effect(() => {
   total = product.price * product.quantity
-}
-effect()
-console.log('total', total)
-// product.quantity = 3 call path
-// reactive() => set() => get() => trigger() => WeakMap of product => depsMap with quantity and value => dep set
+})
+effect(() => {
+  salePrice = product.price * 0.9
+})
+console.log(
+  `Before updated quantity total (should be 10) = ${total} salePrice (should be 4.5) = ${salePrice}`
+)
 product.quantity = 3
-
-console.log('total', total)
+console.log(
+  `After updated quantity total (should be 15) = ${total} salePrice (should be 4.5) = ${salePrice}`
+)
+product.price = 10
+console.log(
+  `After updated price total (should be 30) = ${total} salePrice (should be 9) = ${salePrice}`
+)
