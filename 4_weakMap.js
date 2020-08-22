@@ -1,4 +1,4 @@
-console.log('---- Version 1.2 ----')
+console.log('---- Version 1.3 ----')
 console.log(
   'Creating targetMap which is a weakMap(js) where we store the dependencies associated with each reactive object`s properties...',
 )
